@@ -75,4 +75,4 @@ jobs:
       # Step 9: Teardown Docker (always, for cleanup)
       - name: Teardown Docker Compose
         if: always()
-        run: docker-compose down -v  # Remove volumes for cleanup
+        run: docker compose down -v  # Remove volumes for cleanup
