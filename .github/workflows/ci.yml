@@ -28,7 +28,7 @@ jobs:
           KONG_ADMIN_GUI_URL: http://kong:8002  # Use service name for internal access
           KONG_PORTAL_GUI_HOST: localhost:8003
           KONG_PORTAL_GUI_PROTOCOL: http
-          KONG_LICENSE_DATA: '{}'  # Empty license, ignore warning
+          # Removed KONG_LICENSE_DATA to allow free mode startup without invalid JSON
         ports:
           - 8000:8000  # Proxy HTTP
           - 8443:8443  # Proxy HTTPS
