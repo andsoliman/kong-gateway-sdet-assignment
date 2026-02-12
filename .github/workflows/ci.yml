@@ -35,7 +35,7 @@ jobs:
           - 8001:8001  # Admin API
           - 8002:8002  # Manager UI
           - 8003:8003  # Dev Portal (optional)
-        options: --network kong-net  # Optional: Custom network if needed
+        options: --name kong-container --health-cmd "curl -f http://localhost:8001/status || exit 1" --health-interval 10s --health-timeout 5s --health-retries 5  # Give fixed name for logging; add health check for reliability
 
     # Sequential steps
     steps:
@@ -73,7 +73,7 @@ jobs:
           done
           if [ $timeout -le 0 ]; then
             echo "Timeout: Kong not ready"
-            docker logs ${{ job.services.kong.id }}  # Dump logs on timeout for debug
+            docker logs kong-container || echo "No logs available (container may not have started)"  # Dump logs on timeout for debug; handle if container missing
             exit 1
           fi
 
@@ -84,7 +84,7 @@ jobs:
       # Step 7: Dump Docker logs on failure (for debugging)
       - name: Dump Docker logs on failure
         if: failure()
-        run: docker logs ${{ job.services.kong.id }}  # Output Kong container logs if tests fail
+        run: docker logs kong-container || echo "No logs available (container may not have started)"  # Output Kong container logs if tests fail; handle if missing
 
       # Step 8: Upload HTML report as artifact (always, even on failure)
       - name: Upload Playwright report
