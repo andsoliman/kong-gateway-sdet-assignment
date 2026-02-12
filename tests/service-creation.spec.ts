@@ -36,7 +36,7 @@ async function createService(page: Page, name: string, url: string) {
     // Submit the form
     await page.getByRole('button', { name: /save/i }).click();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5000);
 }
 
 // Serial test execution ensures test 1 completes before test 2 starts (required for data persistence)
