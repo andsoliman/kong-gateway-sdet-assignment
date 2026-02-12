@@ -1,21 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-    testDir: './tests', // Directory per i test
-    fullyParallel: true,
+    testDir: './tests', // Test directory
+    fullyParallel: false, // Serial tests execution
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
-    reporter: 'html', // Reporter HTML di default
+    reporter: 'html', // Reporter  
     use: {
-        trace: 'on-first-retry', // Tracce su retry
-        baseURL: 'http://localhost:8002/', // URL base per Kong Manager
+        trace: 'on-first-retry', // Trace on retry
+        baseURL: 'http://localhost:8002/', // Base URL on Kong Manager
     },
     projects: [
         {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
         },
-        // Aggiungi altri browser se vuoi: firefox, webkit
     ],
 });
