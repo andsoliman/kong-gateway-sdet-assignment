@@ -107,7 +107,7 @@ test.describe.serial('Kong Gateway UI Tests', () => {
         // Verify service appears in the services list
         await page.goto('/default/services');
         await page.waitForLoadState('networkidle');
-        await expect(page.getByRole('button', { name: 'test-service' })).toBeVisible();
+        await expect(page.getByTestId('test-service').first()).toBeVisible();
     });
 
     /**
