@@ -44,7 +44,7 @@ jobs:
       # Step 6: Wait for Kong to be ready (optional but crucial to avoid race conditions)
       - name: Wait for Kong Manager to be ready
         run: |
-          timeout=120
+          timeout=240
           while [ $timeout -gt 0 ]; do
             RESPONSE=$(curl -s http://localhost:8002/default 2>/dev/null)
             if echo "$RESPONSE" | grep -q "kong-manager\|app-layout\|Kong"; then
@@ -57,6 +57,7 @@ jobs:
           done
           if [ $timeout -le 0 ]; then
             echo "Timeout: Kong Manager not ready"
+            docker-compose logs kong 
             exit 1
           fi
 
