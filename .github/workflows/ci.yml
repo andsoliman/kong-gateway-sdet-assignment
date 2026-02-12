@@ -42,22 +42,20 @@ jobs:
         run: docker-compose up -d  # Start Kong Gateway
 
       # Step 6: Wait for Kong to be ready (optional but crucial to avoid race conditions)
-      - name: Wait for Kong Manager to be ready
+      - name: Wait for Kong to be ready
         run: |
-          timeout=240
+          timeout=60
           while [ $timeout -gt 0 ]; do
-            RESPONSE=$(curl -s http://localhost:8002/default 2>/dev/null)
-            if echo "$RESPONSE" | grep -q "kong-manager\|app-layout\|Kong"; then
-              echo "Kong Manager is fully loaded!"
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8002/ | grep -q "200"; then
+              echo "Kong is ready!"
               break
             fi
-            echo "Waiting for Kong Manager to fully load... ($timeout seconds left)"
-            sleep 3
-            timeout=$((timeout-3))
+            echo "Waiting for Kong... ($timeout seconds left)"
+            sleep 5
+            timeout=$((timeout-5))
           done
           if [ $timeout -le 0 ]; then
-            echo "Timeout: Kong Manager not ready"
-            docker-compose logs kong 
+            echo "Timeout: Kong not ready"
             exit 1
           fi
 
