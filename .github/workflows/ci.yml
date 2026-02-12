@@ -1,17 +1,41 @@
 name: CI - Playwright Tests for Kong Gateway
 
-# Triggers: Run on push to main or pull requests
+# Triggers: Run on push to main, pull requests, or manually
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:  # Allow manual triggering from GitHub UI
 
 # Jobs: Define the jobs to run
 jobs:
   test:
     # Runner: Use Ubuntu latest for compatibility with Docker and Node
     runs-on: ubuntu-latest
+
+    # Services: Run Docker containers as services (better than manual up/down for CI)
+    services:
+      kong:
+        image: kong/kong-gateway:3.5  # Use the latest version or specify one
+        env:
+          KONG_DATABASE: "off"  # DB-less mode for simplicity
+          KONG_PROXY_ACCESS_LOG: /dev/stdout
+          KONG_ADMIN_ACCESS_LOG: /dev/stdout
+          KONG_PROXY_ERROR_LOG: /dev/stderr
+          KONG_ADMIN_ERROR_LOG: /dev/stderr
+          KONG_ADMIN_LISTEN: 0.0.0.0:8001
+          KONG_ADMIN_GUI_URL: http://kong:8002  # Use service name for internal access
+          KONG_PORTAL_GUI_HOST: localhost:8003
+          KONG_PORTAL_GUI_PROTOCOL: http
+          KONG_LICENSE_DATA: '{}'  # Empty license, ignore warning
+        ports:
+          - 8000:8000  # Proxy HTTP
+          - 8443:8443  # Proxy HTTPS
+          - 8001:8001  # Admin API
+          - 8002:8002  # Manager UI
+          - 8003:8003  # Dev Portal (optional)
+        options: --network kong-net  # Optional: Custom network if needed
 
     # Sequential steps
     steps:
@@ -23,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24.13.0'  # Or your version
+          node-version: '18'  # Or your version
           cache: 'npm'  # Cache for speed
 
       # Step 3: Install Node.js dependencies
@@ -34,17 +58,10 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps  # Include deps for headless browser on Ubuntu
 
-      # Step 5: Install and start Docker Compose in background
-      - name: Install Docker Compose
-        run: sudo apt-get update && sudo apt-get install -y docker-compose
-
-      - name: Start Docker Compose
-        run: docker-compose up -d  # Start Kong Gateway
-
-      # Step 6: Wait for Kong to be ready (optional but crucial to avoid race conditions)
+      # Step 5: Wait for Kong service to be ready (crucial to avoid race conditions)
       - name: Wait for Kong to be ready
         run: |
-          timeout=60
+          timeout=120  # Increased timeout for reliability in CI
           while [ $timeout -gt 0 ]; do
             if curl -s -o /dev/null -w "%{http_code}" http://localhost:8002/ | grep -q "200"; then
               echo "Kong is ready!"
@@ -56,12 +73,18 @@ jobs:
           done
           if [ $timeout -le 0 ]; then
             echo "Timeout: Kong not ready"
+            docker logs ${{ job.services.kong.id }}  # Dump logs on timeout for debug
             exit 1
           fi
 
-      # Step 7: Run Playwright tests
+      # Step 6: Run Playwright tests
       - name: Run Playwright tests
         run: npx playwright test  # Run all tests
+
+      # Step 7: Dump Docker logs on failure (for debugging)
+      - name: Dump Docker logs on failure
+        if: failure()
+        run: docker logs ${{ job.services.kong.id }}  # Output Kong container logs if tests fail
 
       # Step 8: Upload HTML report as artifact (always, even on failure)
       - name: Upload Playwright report
@@ -71,8 +94,3 @@ jobs:
           name: playwright-report
           path: playwright-report/  # Directory of reports
           retention-days: 30  # Keep for 30 days
-
-      # Step 9: Teardown Docker (always, for cleanup)
-      - name: Teardown Docker Compose
-        if: always()
-        run: docker compose down -v  # Remove volumes for cleanup
