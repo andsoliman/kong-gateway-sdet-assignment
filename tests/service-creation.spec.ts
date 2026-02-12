@@ -106,11 +106,13 @@ test.describe.serial('Kong Gateway UI Tests', () => {
         const saveBtn = page.getByRole('button', { name: /save|create/i }).first();
         if (await saveBtn.isVisible()) {
             await saveBtn.click();
+            await page.waitForTimeout(5000); // Add this line for extra wait
             await page.waitForLoadState('networkidle');
         }
         
         // Verify route was created
         await page.goto('/default/routes');
+        await page.waitForTimeout(5000); // Add this line for extra wait
         await page.waitForLoadState('networkidle');
         await expect(page.getByRole('button', { name: 'test-route' })).toBeVisible();
     });
