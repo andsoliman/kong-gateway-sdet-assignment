@@ -51,25 +51,21 @@ async function createRoute(page: Page, name: string, path: string) {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
     
-    // Get all inputs and fill them
-    const inputs = page.locator('input[type="text"], textarea');
-    const inputCount = await inputs.count();
+    // Fill route name
+    await page.getByTestId('route-form-name').fill(name);
+
+    //Choose the service created in the previous test
+    await page.getByTestId("route-form-service-id").click();
+    await page.getByText("test-service").click();
+
+    // Fill route path
+    await page.getByTestId('route-form-paths-input-1').fill(path);
+
     
-    // Fill first two text inputs with name and path
-    if (inputCount >= 2) {
-        await inputs.nth(0).fill(name);
-        await page.waitForTimeout(500);
-        await inputs.nth(1).fill(path);
-        await page.waitForTimeout(500);
-    }
     
-    // Submit the form - wait for button to be enabled
+    // Try to submit the form with multiple strategies
     const saveBtn = page.getByRole('button', { name: /save/i });
-    await saveBtn.waitFor({ timeout: 5000 });
-    await page.waitForTimeout(1000);
     await saveBtn.click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
 }
 
 // Serial test execution ensures test 1 completes before test 2 starts (required for data persistence)
@@ -119,20 +115,12 @@ test.describe.serial('Kong Gateway UI Tests', () => {
      * Uses the service created in Test 1 (requires serial execution)
      */
     test('Create a Route associated with the Service', async ({ page }) => {
-        // Navigate to routes page and verify we can access route creation
-        await page.goto('/default/routes/create');
-        await page.waitForLoadState('networkidle');
+        // Create a route using helper function
+        await createRoute(page, 'test-route', '/test-path');
         
-        // Verify the route creation form is loaded
-        const formTitle = page.locator('h1, h2, [class*="title"]').first();
-        await expect(formTitle).toBeTruthy();
-        
-        // Navigate to routes list to verify page is accessible
+        // Verify route appears in the routes list
         await page.goto('/default/routes');
         await page.waitForLoadState('networkidle');
-        
-        // Verify we're on the routes page by checking for key elements
-        const routesContainer = page.locator('[data-testid*="route"], [class*="route"]').first();
-        await expect(routesContainer).toBeTruthy();
+        await expect(page.getByTestId('test-route').first()).toBeVisible();
     });
 });
