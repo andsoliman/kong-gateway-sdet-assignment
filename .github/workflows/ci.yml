@@ -1,0 +1,75 @@
+name: CI - Playwright Tests for Kong Gateway
+
+# Triggers: Run on push to main or pull requests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Jobs: Define the jobs to run
+jobs:
+  test:
+    # Runner: Use Ubuntu latest for compatibility with Docker and Node
+    runs-on: ubuntu-latest
+
+    # Sequential steps
+    steps:
+      # Step 1: Checkout the code from the repo
+      - name: Checkout repository
+        uses: actions/checkout@v4  # Updated version
+
+      # Step 2: Setup Node.js (version matching your local, e.g., 18.x)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'  # Or your version
+          cache: 'npm'  # Cache for speed
+
+      # Step 3: Install Node.js dependencies
+      - name: Install dependencies
+        run: npm ci  # Use ci for clean install in CI
+
+      # Step 4: Install Playwright browsers
+      - name: Install Playwright
+        run: npx playwright install --with-deps  # Include deps for headless browser on Ubuntu
+
+      # Step 5: Start Docker Compose in background
+      - name: Start Docker Compose
+        run: docker-compose up -d  # Start Kong Gateway
+
+      # Step 6: Wait for Kong to be ready (optional but crucial to avoid race conditions)
+      - name: Wait for Kong to be ready
+        run: |
+          timeout=60
+          while [ $timeout -gt 0 ]; do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8002/ | grep -q "200"; then
+              echo "Kong is ready!"
+              break
+            fi
+            echo "Waiting for Kong... ($timeout seconds left)"
+            sleep 5
+            timeout=$((timeout-5))
+          done
+          if [ $timeout -le 0 ]; then
+            echo "Timeout: Kong not ready"
+            exit 1
+          fi
+
+      # Step 7: Run Playwright tests
+      - name: Run Playwright tests
+        run: npx playwright test  # Run all tests
+
+      # Step 8: Upload HTML report as artifact (always, even on failure)
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()  # Always, for debugging failures
+        with:
+          name: playwright-report
+          path: playwright-report/  # Directory of reports
+          retention-days: 30  # Keep for 30 days
+
+      # Step 9: Teardown Docker (always, for cleanup)
+      - name: Teardown Docker Compose
+        if: always()
+        run: docker-compose down -v  # Remove volumes for cleanup
