@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'  # Or your version
+          node-version: '24.13.0'  # Or your version
           cache: 'npm'  # Cache for speed
 
       # Step 3: Install Node.js dependencies
