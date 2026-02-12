@@ -34,7 +34,10 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps  # Include deps for headless browser on Ubuntu
 
-      # Step 5: Start Docker Compose in background
+      # Step 5: Install and start Docker Compose in background
+      - name: Install Docker Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
+
       - name: Start Docker Compose
         run: docker-compose up -d  # Start Kong Gateway
 
