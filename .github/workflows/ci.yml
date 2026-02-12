@@ -25,17 +25,17 @@ jobs:
           KONG_PROXY_ERROR_LOG: /dev/stderr
           KONG_ADMIN_ERROR_LOG: /dev/stderr
           KONG_ADMIN_LISTEN: 0.0.0.0:8001
-          KONG_ADMIN_GUI_URL: http://kong:8002  # Use service name for internal access
+          KONG_ADMIN_GUI_URL: http://localhost:8002  # Changed back to localhost for consistency
           KONG_PORTAL_GUI_HOST: localhost:8003
           KONG_PORTAL_GUI_PROTOCOL: http
-          # Removed KONG_LICENSE_DATA to allow free mode startup without invalid JSON
+          # No KONG_LICENSE_DATA to run in free mode
         ports:
           - 8000:8000  # Proxy HTTP
           - 8443:8443  # Proxy HTTPS
           - 8001:8001  # Admin API
           - 8002:8002  # Manager UI
           - 8003:8003  # Dev Portal (optional)
-        options: --name kong-container --health-cmd "curl -f http://localhost:8001/status || exit 1" --health-interval 10s --health-timeout 5s --health-retries 5  # Give fixed name for logging; add health check for reliability
+        options: --name kong-container  # Fixed name for logging; removed health check to avoid potential command not found issues
 
     # Sequential steps
     steps:
