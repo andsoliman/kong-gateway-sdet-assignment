@@ -49,3 +49,9 @@ npm test
 - `playwright.config.ts` - Test configuration
 - `docker-compose.yml` - Kong + PostgreSQL setup
 - `.github/workflows/ci.yml` - GitHub Actions pipeline" 
+
+## Possible improvements
+
+-The usage of the POM pattern in order to separate the pages from the test excetution
+-Adding of a page for having the report tracking or use an instrument like XRay
+-Add a self healing system with n8n
