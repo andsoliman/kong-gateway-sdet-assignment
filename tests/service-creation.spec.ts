@@ -107,6 +107,7 @@ test.describe.serial('Kong Gateway UI Tests', () => {
         // Verify service appears in the services list
         await page.goto('/default/services');
         await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(1000);
         await expect(page.getByTestId('test-service').first()).toBeVisible();
     });
 
@@ -121,6 +122,7 @@ test.describe.serial('Kong Gateway UI Tests', () => {
         // Verify route appears in the routes list
         await page.goto('/default/routes');
         await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(1000);
         await expect(page.getByTestId('test-route').first()).toBeVisible();
     });
 });
