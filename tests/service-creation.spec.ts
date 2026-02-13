@@ -37,6 +37,14 @@ async function createService(page: Page, name: string, url: string) {
     await page.getByRole('button', { name: /save/i }).click();
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000);
+    
+    // Verify service was created by navigating to services list and checking for it
+    await page.goto('/default/services');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    
+    // Wait for the service to appear in the list with extended timeout for CI environments
+    await expect(page.getByTestId(name).first()).toBeVisible({ timeout: 10000 });
 }
 
 /**
@@ -53,19 +61,30 @@ async function createRoute(page: Page, name: string, path: string) {
     
     // Fill route name
     await page.getByTestId('route-form-name').fill(name);
+    await page.waitForTimeout(500);
 
-    //Choose the service created in the previous test
+    // Choose the service created in the previous test
     await page.getByTestId("route-form-service-id").click();
-    await page.getByText("test-service").click();
+    await page.waitForTimeout(1000);
+    
+    // Wait for service dropdown and select test-service
+    const serviceOption = page.getByText("test-service", { exact: true }).first();
+    await serviceOption.waitFor({ timeout: 5000 });
+    await serviceOption.click();
+    await page.waitForTimeout(500);
 
     // Fill route path
     await page.getByTestId('route-form-paths-input-1').fill(path);
+    await page.waitForTimeout(500);
 
-    
-    
-    // Try to submit the form with multiple strategies
-    const saveBtn = page.getByRole('button', { name: /save/i });
+    // Click save button
+    const saveBtn = page.getByRole('button', { name: /save/i }).first();
+    await saveBtn.waitFor({ timeout: 5000 });
     await saveBtn.click();
+    
+    // Wait for the route to be created and page to navigate
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 }
 
 // Serial test execution ensures test 1 completes before test 2 starts (required for data persistence)
@@ -102,13 +121,8 @@ test.describe.serial('Kong Gateway UI Tests', () => {
      */
     test('Create a new Service from scratch', async ({ page }) => {
         // Create test service using helper function
+        // The helper now includes verification that the service was created
         await createService(page, 'test-service', 'http://example.com:80');
-        
-        // Verify service appears in the services list
-        await page.goto('/default/services');
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
-        await expect(page.getByTestId('test-service').first()).toBeVisible();
     });
 
     /**
